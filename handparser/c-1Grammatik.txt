@@ -1,0 +1,155 @@
+#############################################
+FIRST-Mengen der gegebenen C_-1 Grammatik:
+#############################################
+Nichtterminal       FIRST                                                       FOLLOW
+program             {KW_BOOLEAN;KW_FLOAT;KW_INT;KW_VOID;$}                      
+functiondefinition  {KW_BOOLEAN;KW_FLOAT;KW_INT;KW_VOID}                        
+functioncall        {ID}                                                        
+statementlist       {"{";KW_IF;KW_RETURN;KW_PRINTF;ID;<EPSILON>}                {"}"}
+block               {"{";KW_IF;KW_RETURN;KW_PRINTF;ID}                          
+statement           {KW_IF;KW_RETURN;KW_PRINTF;ID;}                             
+ifstatement         {KW_IF}                                                     
+returnstatement     {KW_RETURN}                                                 
+printf              {KW_PRINTF}                                                 
+type                {KW_BOOLEAN;KW_FLOAT;KW_INT;KW_VOID}                        
+statassignment      {ID}                                                        
+assignment          {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}            
+expr                {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}            
+simpexpr            {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}            
+term                {ID;CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}                
+factor              {ID;CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}                
+
+
+
+#############################################
+LL1 Grammatik? NEIN.
+Regeln mit nicht disjunktiven FIRST-Mengen:
+#############################################
+                                            FIRST
+statement -> statassignment ";"             {ID}
+statement -> functioncall ";"               {ID}
+
+returnstatement -> <KW_RETURN>              {KW_RETURN}
+returnstatement -> <KW_RETURN> assignment   {KW_RETURN}
+
+assignment -> <ID> "=" assignment           {ID}
+assignment -> expr                          {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+
+expr -> simpexpr                            {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+expr -> simpexpr "==" simpexpr              {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+expr -> simpexpr "!=" simpexpr              {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+expr -> simpexpr "<=" simpexpr              {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+expr -> simpexpr ">=" simpexpr              {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+expr -> simpexpr "<" simpexpr               {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+expr -> simpexpr ">" simpexpr               {ID;"-";CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+
+simpexpr -> term                            {ID;CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+simpexpr -> term simpexpr2                  {ID;CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+simpexpr -> "-" term                        {"-"}
+simpexpr -> "-" term simpexpr2              {"-"}
+    simpexpr2 -> <EPSILON>
+    simpexpr2 -> "+" term simpexpr2
+    simpexpr2 -> "-" term simpexpr2
+    simpexpr2 -> "||" term simpexpr2
+
+term -> factor                              {ID;CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+term -> factor term2                        {ID;CONST_INT;CONST_FLOAT;CONST_BOOLEAN;"("}
+    term2 -> <EPSILON>
+    term2 -> "*" factor term2
+    term2 -> "/" factor term2
+    term2 -> "&&" factor term2
+
+factor -> <ID>                              {ID}
+factor -> functioncall                      {ID}
+
+
+
+#############################################
+Umformung in LL(1)-Grammatik:
+#############################################
+Grammatik                                                                   FIRST                                                           FOLLOW
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+program             -> <EOF>                                                {<EOF>}
+program             -> functiondefinition program                           {<KW_BOOLEAN>; <KW_FLOAT>; <KW_INT>; <KW_VOID>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+functiondefinition  -> type <ID> "(" ")" "{" statementlist "}"              {<KW_BOOLEAN>; <KW_FLOAT>; <KW_INT>; <KW_VOID>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+functioncall        -> <ID> "(" ")"     //Nicht mehr vorkommend             {<ID>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+statementlist       -> EPSILON                                              {EPSILON}                                                       {"}"}
+statementlist       -> block statementlist                                  {"{"; <KW_IF>; <KW_RETURN>; <KW_PRINTF>; <ID>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+block               -> "{" statementlist "}"                                {"{"}
+block               -> statement                                            {<KW_IF>; <KW_RETURN>; <KW_PRINTF>; <ID>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+statement           -> ifstatement                                          {<KW_IF>}
+statement           -> returnstatement ";"                                  {<KW_RETURN>}
+statement           -> print ";"                                            {<KW_PRINTF>}
+statement           -> <ID> statement2                                      {<ID>}
+  
+  statement2        -> "=" assignment ";"                                  {"="}
+  statement2        -> "(" ")" ";"                                          {"("}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+ifstatement         -> <KW_IF> "(" assignment ")" block                     {<KW_IF>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+returnstatement     -> <KW_RETURN> returnstatement2                         {<KW_RETURN>}
+  
+  returnstatement2  -> EPSILON                                              {EPSILON}                                                       {";"}
+  returnstatement2  -> assignment                                           {"-"; <CONST_INT>; <CONST_FLOAT>; <CONST_BOOLEAN>; "("; <ID>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+print               -> <KW_PRINTF> "(" assignment ")"                       {<KW_PRINTF>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+type                -> <KW_BOOLEAN>                                         {<KW_BOOLEAN>}
+type                -> <KW_FLOAT>                                           {<KW_FLOAT>}
+type                -> <KW_INT>                                             {<KW_INT>}
+type                -> <KW_VOID>                                            {<KW_VOID>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+statassignment      -> <ID> "=" assignment      //Nicht mehr vorkommend     {<ID>}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+assignment          -> "-" term simpexpr2 expr2                             {"-"}
+assignment          -> <CONST_INT> term2 simpexpr2 expr2                    {<CONST_INT>}
+assignment          -> <CONST_FLOAT> term2 simpexpr2 expr2                  {<CONST_FLOAT>}
+assignment          -> <CONST_BOOLEAN> term2 simpexpr2 expr2                {<CONST_BOOLEAN>}
+assignment          -> "(" assignment ")" term2 simpexpr2 expr2             {"("}
+assignment          -> <ID> assignment2                                     {<ID>}
+  
+  assignment2       -> "=" assignment                                       {"="}
+  assignment2       -> term2 simpexpr2 expr2                                {EPSILON; "*"; "/"; "&&"}                                       {")"; "{"; <KW_IF>; <KW_RETURN>; <KW_PRINTF>; <ID>; ";"}
+  assignment2       -> "(" ")" term2 simpexpr2 expr2                        {"("}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+expr                -> simpexpr expr2                                       {"-"; <CONST_INT>; <CONST_FLOAT>; <CONST_BOOLEAN>; "("; <ID>}
+  
+  expr2             -> EPSILON                                              {EPSILON}                                                       {")"; "{"; <KW_IF>; <KW_RETURN>; <KW_PRINTF>; <ID>; ";"}
+  expr2             -> "==" simpexpr                                        {"=="}
+  expr2             -> "!=" simpexpr                                        {"!="}
+  expr2             -> "<=" simpexpr                                        {"<="}
+  expr2             -> ">=" simpexpr                                        {">="}
+  expr2             -> "<"  simpexpr                                        {"<"}
+  expr2             -> ">"  simpexpr                                        {">"}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+simpexpr            -> "-" term simpexpr2                                   {"-"}
+simpexpr            -> term simpexpr2                                       {<CONST_INT>; <CONST_FLOAT>; <CONST_BOOLEAN>; "("; <ID>}
+  
+  simpexpr2         -> EPSILON                                              {EPSILON}                                                       {FIRST(expr2); ")"; "{"; <KW_IF>; <KW_RETURN>; <KW_PRINTF>; <ID>; ";"}
+  simpexpr2         -> "+" term simpexpr2                                   {"+"}
+  simpexpr2         -> "-" term simpexpr2                                   {"-"}
+  simpexpr2         -> "||" term simpexpr2                                  {"||"}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+term                -> factor term2                                         {<CONST_INT>; <CONST_FLOAT>; <CONST_BOOLEAN>; "("; <ID>}
+  
+  term2             -> EPSILON                                              {EPSILON}                                                       {FIRST(simpexpr2); FIRST(expr2); ")"; "{"; <KW_IF>; <KW_RETURN>; <KW_PRINTF>; <ID>; ";"}
+  term2             -> "*" factor term2                                     {"*"}
+  term2             -> "/" factor term2                                     {"/"}
+  term2             -> "&&" factor term2                                    {"&&"}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+factor              -> <CONST_INT>                                          {<CONST_INT>}
+factor              -> <CONST_FLOAT>                                        {<CONST_FLOAT>}
+factor              -> <CONST_BOOLEAN>                                      {<CONST_BOOLEAN>}
+factor              -> "(" assignment ")"                                   {"("}
+factor              -> <ID> factor2                                         {<ID>}
+  
+  factor2           -> EPSILON                                              {EPSILON}                                                       {FIRST(term2); FIRST(simpexpr2); FIRST(expr2); ")"; "{"; <KW_IF>; <KW_RETURN>; <KW_PRINTF>; <ID>; ";"}
+  factor2           -> "(" ")"                                              {"("}
+-------------------|-------------------------------------------------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+
+Hie sind die Eigenschaften einer LL(1)-Grammatik erfüllt.
